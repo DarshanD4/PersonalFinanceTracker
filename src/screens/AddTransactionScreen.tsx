@@ -10,10 +10,10 @@ import {
 } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-const { width } = Dimensions.get("window");
+import { useTransactions } from "../context/FinanceContext";
 
 export default function AddTransactionScreen({ navigation }: any) {
+  const { addTransaction } = useTransactions();
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
   const [type, setType] = useState("Expense"); // Default to Expense
@@ -25,7 +25,7 @@ export default function AddTransactionScreen({ navigation }: any) {
       return;
     }
 
-    console.log("Saving Product Data:", { amount, category, type });
+    addTransaction(Number(amount), category, type as "Income" | "Expense");
     navigation.goBack();
   };
 
@@ -89,7 +89,7 @@ export default function AddTransactionScreen({ navigation }: any) {
               </TouchableOpacity>
             </View>
           </View>
-          {/* 3. CATEGORY INPUT */}
+          {/* CATEGORY INPUT */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Category</Text>
             <TextInput
@@ -100,7 +100,7 @@ export default function AddTransactionScreen({ navigation }: any) {
               value={category}
             />
           </View>
-          {/* 4. CUSTOM STYLED BUTTONS */}
+          {/* BUTTONS */}
           <View style={styles.buttonContainer}>
             <TouchableOpacity
               style={[styles.mainButton, { backgroundColor: "#10B981" }]}
@@ -143,7 +143,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // Amount Styling
   amountWrapper: {
     flexDirection: "row",
     alignItems: "center",
@@ -165,7 +164,6 @@ const styles = StyleSheet.create({
     minWidth: 100,
   },
 
-  // Toggle Styling
   toggleContainer: {
     flexDirection: "row",
     backgroundColor: "#1E293B",
@@ -183,7 +181,6 @@ const styles = StyleSheet.create({
   toggleText: { color: "#94A3B8", fontWeight: "600" },
   activeText: { color: "white" },
 
-  // Category Styling
   categoryInput: {
     backgroundColor: "#1E293B",
     color: "white",
@@ -192,7 +189,6 @@ const styles = StyleSheet.create({
     padding: 16,
   },
 
-  // Button Styling
   buttonContainer: { marginTop: 20 },
   mainButton: {
     paddingVertical: 16,

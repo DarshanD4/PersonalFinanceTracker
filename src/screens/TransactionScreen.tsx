@@ -1,36 +1,127 @@
-import React from "react";
+import React, { useRef } from "react";
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Alert,
 } from "react-native";
-import { useTransactions } from "../context/FinanceContext";
+import { useTransactions, Transaction } from "../context/FinanceContext";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Swipeable from "react-native-gesture-handler/Swipeable";
+
+// ✅ V2 Imports
+import ReanimatedSwipeable, {
+  SwipeableMethods,
+} from "react-native-gesture-handler/ReanimatedSwipeable";
+import Reanimated, {
+  useAnimatedStyle,
+  interpolate,
+  SharedValue,
+} from "react-native-reanimated";
 
 export default function TransactionsScreen({ navigation }: any) {
-  const { transactions, deleteTransaction } = useTransactions();
+  const { transactions, deleteTransaction, isDarkMode } = useTransactions();
 
-  const renderRightActions = (id: string) => (
-    <TouchableOpacity
-      style={styles.deleteAction}
-      onPress={() => deleteTransaction(id)}
-    >
-      <Ionicons name="trash" size={24} color="white" />
-    </TouchableOpacity>
-  );
+  // 🎯 THE REF MAP: This is the secret to fixing the "Sticky" row problem
+  const swipeableRefs = useRef<Map<string, SwipeableMethods>>(new Map());
+
+  const handleAction = (
+    id: string,
+    action: "delete" | "edit",
+    item?: Transaction,
+  ) => {
+    // Close the row immediately for a smooth native feel
+    const ref = swipeableRefs.current.get(id);
+    if (ref) ref.close();
+
+    if (action === "delete") {
+      deleteTransaction(id);
+    } else if (action === "edit" && item) {
+      navigation.navigate("AddTransaction", { editItem: item });
+    }
+  };
+
+  // 🟦 EDIT ACTION (Left Swipe)
+  const renderLeftActions = (
+    prog: SharedValue<number>,
+    _drag: SharedValue<number>,
+    item: Transaction,
+  ) => {
+    const styleAnimation = useAnimatedStyle(() => ({
+      transform: [
+        { scale: interpolate(prog.value, [0, 1], [0.5, 1], "clamp") },
+      ],
+    }));
+
+    return (
+      <Reanimated.View
+        style={[
+          styles.actionBtn,
+          { backgroundColor: "#6366F1" },
+          styleAnimation,
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.actionInner}
+          onPress={() => handleAction(item.id, "edit", item)}
+        >
+          <Ionicons name="pencil" size={22} color="white" />
+        </TouchableOpacity>
+      </Reanimated.View>
+    );
+  };
+
+  // 🟥 DELETE ACTION (Right Swipe)
+  const renderRightActions = (
+    prog: SharedValue<number>,
+    _drag: SharedValue<number>,
+    id: string,
+  ) => {
+    const styleAnimation = useAnimatedStyle(() => ({
+      transform: [
+        { scale: interpolate(prog.value, [0, 1], [0.5, 1], "clamp") },
+      ],
+    }));
+
+    return (
+      <Reanimated.View
+        style={[
+          styles.actionBtn,
+          { backgroundColor: "#EF4444" },
+          styleAnimation,
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.actionInner}
+          onPress={() => handleAction(id, "delete")}
+        >
+          <Ionicons name="trash" size={22} color="white" />
+        </TouchableOpacity>
+      </Reanimated.View>
+    );
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        { backgroundColor: isDarkMode ? "#0F172A" : "#F8FAFC" },
+      ]}
+    >
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="white" />
+          <Ionicons
+            name="arrow-back"
+            size={24}
+            color={isDarkMode ? "white" : "#1E293B"}
+          />
         </TouchableOpacity>
-        <Text style={styles.title}>History</Text>
+        <Text
+          style={[styles.title, { color: isDarkMode ? "white" : "#1E293B" }]}
+        >
+          History
+        </Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -38,26 +129,55 @@ export default function TransactionsScreen({ navigation }: any) {
         data={transactions}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <Swipeable renderRightActions={() => renderRightActions(item.id)}>
-            <View style={styles.transactionItem}>
+          <ReanimatedSwipeable
+            // ✅ THE FIX: Explicitly cast the ref callback to satisfy TS
+            ref={
+              ((ref: SwipeableMethods | null) => {
+                if (ref) {
+                  swipeableRefs.current.set(item.id, ref);
+                } else {
+                  swipeableRefs.current.delete(item.id);
+                }
+              }) as any
+            }
+            friction={2}
+            enableTrackpadTwoFingerGesture
+            rightThreshold={40}
+            leftThreshold={40}
+            renderLeftActions={(p, d) => renderLeftActions(p, d, item)}
+            renderRightActions={(p, d) => renderRightActions(p, d, item.id)}
+          >
+            <View
+              style={[
+                styles.transactionItem,
+                { backgroundColor: isDarkMode ? "#1E293B" : "#FFFFFF" },
+              ]}
+            >
               <View style={styles.leftContent}>
                 <View
                   style={[
                     styles.iconBg,
                     {
                       backgroundColor:
-                        item.type === "Income" ? "#065F46" : "#7F1D1D",
+                        item.type === "Income" ? "#10B981" : "#EF4444",
                     },
                   ]}
                 >
                   <Ionicons
                     name={item.type === "Income" ? "arrow-down" : "arrow-up"}
-                    size={20}
+                    size={18}
                     color="white"
                   />
                 </View>
                 <View>
-                  <Text style={styles.categoryText}>{item.category}</Text>
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      { color: isDarkMode ? "white" : "#1E293B" },
+                    ]}
+                  >
+                    {item.category}
+                  </Text>
                   <Text style={styles.dateText}>
                     {new Date(item.date).toLocaleDateString()}
                   </Text>
@@ -69,11 +189,11 @@ export default function TransactionsScreen({ navigation }: any) {
                   item.type === "Income" ? styles.income : styles.expense,
                 ]}
               >
-                {item.type === "Income" ? "+" : "-"}₹
-                {Math.abs(item.amount).toLocaleString()}
+                {item.type === "Income" ? "+" : "-"} ₹
+                {item.amount.toLocaleString()}
               </Text>
             </View>
-          </Swipeable>
+          </ReanimatedSwipeable>
         )}
       />
     </SafeAreaView>
@@ -81,42 +201,36 @@ export default function TransactionsScreen({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0F172A" },
+  container: { flex: 1 },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     padding: 20,
   },
-  title: { color: "white", fontSize: 20, fontWeight: "bold" },
+  title: { fontSize: 20, fontWeight: "bold" },
   transactionItem: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#1E293B",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#0F172A",
+    borderBottomColor: "rgba(0,0,0,0.05)",
   },
   leftContent: { flexDirection: "row", alignItems: "center" },
   iconBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
   },
-  categoryText: { color: "white", fontSize: 16, fontWeight: "600" },
+  categoryText: { fontSize: 16, fontWeight: "600" },
   dateText: { color: "#94A3B8", fontSize: 12 },
   amountText: { fontSize: 16, fontWeight: "bold" },
   income: { color: "#10B981" },
   expense: { color: "#EF4444" },
-  deleteAction: {
-    backgroundColor: "#EF4444",
-    justifyContent: "center",
-    alignItems: "center",
-    width: 80,
-    height: "100%",
-  },
+  actionBtn: { width: 80 },
+  actionInner: { flex: 1, justifyContent: "center", alignItems: "center" },
 });

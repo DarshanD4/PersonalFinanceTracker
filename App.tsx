@@ -8,28 +8,24 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { PaperProvider } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
-// ✅ INTERNAL IMPORTS
 import HomeScreen from "./src/screens/HomeScreen";
 import TransactionScreen from "./src/screens/TransactionScreen";
 import InsightsScreen from "./src/screens/InsightsScreen";
 import AddTransactionScreen from "./src/screens/AddTransactionScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
+import OnboardingScreen from "./src/screens/OnboardingScreen";
 import CustomDrawer from "./src/components/CustomDrawer";
 import {
   TransactionProvider,
   useTransactions,
 } from "./src/context/FinanceContext";
-import { RootTabParamList } from "./src/types/navigation";
 
-// ✅ NAVIGATORS INITIALIZATION
-const Tab = createBottomTabNavigator<RootTabParamList>();
+const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
 
-// BOTTOM TABS
 function TabNavigator() {
   const { isDarkMode } = useTransactions();
-
   return (
     <Tab.Navigator
       screenOptions={{
@@ -72,10 +68,8 @@ function TabNavigator() {
   );
 }
 
-//  MAIN DRAWER
 function MainDrawer() {
   const { isDarkMode } = useTransactions();
-
   return (
     <Drawer.Navigator
       drawerContent={(props) => <CustomDrawer {...props} />}
@@ -87,17 +81,20 @@ function MainDrawer() {
         },
       }}
     >
-      {/* ✅ We pass the FUNCTION TabNavigator here */}
       <Drawer.Screen
         name="MainTabs"
         component={TabNavigator}
         options={{ drawerLabel: "Dashboard" }}
       />
+      <Drawer.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ drawerItemStyle: { display: "none" } }}
+      />
     </Drawer.Navigator>
   );
 }
 
-//  ROOT STACK
 function RootStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -111,17 +108,23 @@ function RootStack() {
     </Stack.Navigator>
   );
 }
+// this is for the onboarding screen
+function NavigationRoot() {
+  const { hasCompletedOnboarding } = useTransactions();
+  return (
+    <NavigationContainer>
+      {hasCompletedOnboarding ? <RootStack /> : <OnboardingScreen />}
+    </NavigationContainer>
+  );
+}
 
-// 🚀 FINAL EXPORT
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <PaperProvider>
           <TransactionProvider>
-            <NavigationContainer>
-              <RootStack />
-            </NavigationContainer>
+            <NavigationRoot />
           </TransactionProvider>
         </PaperProvider>
       </SafeAreaProvider>

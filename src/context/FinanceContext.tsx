@@ -11,13 +11,24 @@ export type Transaction = {
 
 interface TransactionContextType {
   transactions: Transaction[];
+  userName: string;
+  hasCompletedOnboarding: boolean;
   addTransaction: (
     amount: number,
     category: string,
     type: "Income" | "Expense",
   ) => Promise<void>;
+  updateTransaction: (
+    id: string,
+    updatedData: Partial<Transaction>,
+  ) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
-  clearAllData: () => Promise<void>; // 👈 ADD THIS LINE
+  clearAllData: () => Promise<void>;
+  completeOnboarding: (
+    name: string,
+    goal: number,
+    salary: number,
+  ) => Promise<void>;
   totalBalance: number;
   monthlyGoal: number;
   setMonthlyGoal: (goal: number) => void;
@@ -44,23 +55,53 @@ export const TransactionProvider = ({
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [monthlyGoal, setGoal] = useState<number>(5000);
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [userName, setUserName] = useState("User");
+  const [hasCompletedOnboarding, setOnboarding] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
-      const saved = await AsyncStorage.getItem("@flow_money_data");
+      const savedData = await AsyncStorage.getItem("@flow_money_data");
       const savedGoal = await AsyncStorage.getItem("@flow_money_goal");
-      if (saved) setTransactions(JSON.parse(saved));
+      const savedName = await AsyncStorage.getItem("@user_name");
+      const savedOnboarding = await AsyncStorage.getItem(
+        "@onboarding_complete",
+      );
+      const savedTheme = await AsyncStorage.getItem("@is_dark_mode");
+
+      if (savedData) setTransactions(JSON.parse(savedData));
       if (savedGoal) setGoal(Number(savedGoal));
+      if (savedName) setUserName(savedName);
+      if (savedOnboarding === "true") setOnboarding(true);
+      if (savedTheme !== null) setIsDarkMode(savedTheme === "true");
     };
     loadData();
   }, []);
 
-  //  Wipes everything from the phone's memory
-  const clearAllData = async () => {
-    setTransactions([]);
-    setGoal(50000);
-    await AsyncStorage.clear();
+  const completeOnboarding = async (
+    name: string,
+    goal: number,
+    salary: number,
+  ) => {
+    const initialEntry: Transaction = {
+      id: Date.now().toString(),
+      date: new Date().toISOString(),
+      amount: salary,
+      category: "Initial Salary",
+      type: "Income",
+    };
+    setTransactions([initialEntry]);
+    setUserName(name);
+    setGoal(goal);
+    setOnboarding(true);
+    await AsyncStorage.setItem(
+      "@flow_money_data",
+      JSON.stringify([initialEntry]),
+    );
+    await AsyncStorage.setItem("@user_name", name);
+    await AsyncStorage.setItem("@flow_money_goal", goal.toString());
+    await AsyncStorage.setItem("@onboarding_complete", "true");
   };
+
   const addTransaction = async (
     amount: number,
     category: string,
@@ -78,18 +119,33 @@ export const TransactionProvider = ({
     await AsyncStorage.setItem("@flow_money_data", JSON.stringify(updated));
   };
 
+  const updateTransaction = async (
+    id: string,
+    updatedData: Partial<Transaction>,
+  ) => {
+    const updated = transactions.map((t) =>
+      t.id === id ? { ...t, ...updatedData } : t,
+    );
+    setTransactions(updated);
+    await AsyncStorage.setItem("@flow_money_data", JSON.stringify(updated));
+  };
+
   const deleteTransaction = async (id: string) => {
     const updated = transactions.filter((t) => t.id !== id);
     setTransactions(updated);
     await AsyncStorage.setItem("@flow_money_data", JSON.stringify(updated));
   };
 
-  const setMonthlyGoal = async (goal: number) => {
-    setGoal(goal);
-    await AsyncStorage.setItem("@flow_money_goal", goal.toString());
+  const toggleTheme = async () => {
+    setIsDarkMode(!isDarkMode);
+    await AsyncStorage.setItem("@is_dark_mode", (!isDarkMode).toString());
   };
 
-  const toggleTheme = () => setIsDarkMode(!isDarkMode);
+  const clearAllData = async () => {
+    setTransactions([]);
+    setOnboarding(false);
+    await AsyncStorage.clear();
+  };
 
   const totalBalance = transactions.reduce(
     (acc, t) => (t.type === "Income" ? acc + t.amount : acc - t.amount),
@@ -100,12 +156,16 @@ export const TransactionProvider = ({
     <TransactionContext.Provider
       value={{
         transactions,
+        userName,
+        hasCompletedOnboarding,
         addTransaction,
+        updateTransaction,
         deleteTransaction,
-        clearAllData, // 👈 ADD THIS LINE
+        clearAllData,
+        completeOnboarding,
         totalBalance,
         monthlyGoal,
-        setMonthlyGoal,
+        setMonthlyGoal: setGoal,
         isDarkMode,
         toggleTheme,
       }}

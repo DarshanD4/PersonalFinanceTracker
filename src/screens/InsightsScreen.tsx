@@ -2,112 +2,147 @@ import React from "react";
 import { View, Text, StyleSheet, Dimensions, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTransactions } from "../context/FinanceContext";
-import { LineChart, PieChart } from "react-native-gifted-charts"; // 📈 High-end charts
+import { BarChart, PieChart } from "react-native-gifted-charts";
+import { Ionicons } from "@expo/vector-icons";
 
 const { width } = Dimensions.get("window");
 
 export default function InsightsScreen() {
-  const { transactions } = useTransactions();
+  const { transactions, isDarkMode } = useTransactions();
 
-  // 💰 BASIC MATH
-  const income = transactions
-    .filter((t) => t.type === "Income")
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const expense = transactions
-    .filter((t) => t.type === "Expense")
-    .reduce((sum, t) => sum + t.amount, 0);
-
-  const savings = income - expense;
-
-  // 🧠 STEP 2 — SAVINGS RATE (Safely handling 0 income)
-  const savingsRate = income > 0 ? ((savings / income) * 100).toFixed(1) : "0";
-
-  // 📝 EXPENSE GROUPING (For Pie Chart)
-  // We reduce the transactions into an object { Food: 500, Rent: 1000 }
-  const categoryData = transactions
+  // 1. Filter only expenses and group them
+  const groupedData = transactions
     .filter((t) => t.type === "Expense")
     .reduce((acc: any, t) => {
       acc[t.category] = (acc[t.category] || 0) + t.amount;
       return acc;
     }, {});
 
-  const pieData = Object.keys(categoryData).map((key, index) => ({
-    value: categoryData[key],
+  // 📈 2. Y-AXIS NORMALIZATION (FIXES THE 3.75k ISSUE)
+  const maxGroupedValue = Math.max(
+    ...(Object.values(groupedData) as number[]),
+    1000,
+  );
+  const chartMaxValue = Math.ceil(maxGroupedValue / 5000) * 5000;
+
+  // 3. Format for Bar Chart
+  const barData = Object.keys(groupedData).map((key) => ({
+    value: groupedData[key],
+    label: key.length > 5 ? key.substring(0, 4) + "." : key,
+    frontColor: "#6366F1",
+    topLabelComponent: () => (
+      <Text
+        style={{
+          color: isDarkMode ? "white" : "#0F172A",
+          fontSize: 10,
+          marginBottom: 4,
+          fontWeight: "bold",
+        }}
+      >
+        ₹{groupedData[key]}
+      </Text>
+    ),
+  }));
+
+  // 4. Format for Pie Chart
+  const pieData = Object.keys(groupedData).map((key, index) => ({
+    value: groupedData[key],
     text: key,
     color: ["#6366F1", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"][index % 5],
   }));
 
-  // 📈 LINE CHART DATA
-  const lineData = transactions
-    .slice(0, 6)
-    .reverse()
-    .map((t) => ({ value: t.amount, label: t.category.substring(0, 3) }));
+  const topCategory =
+    Object.keys(groupedData).length > 0
+      ? Object.keys(groupedData).reduce((a, b) =>
+          groupedData[a] > groupedData[b] ? a : b,
+        )
+      : "No Data";
+
+  const textColor = isDarkMode ? "#FFFFFF" : "#0F172A";
+  const cardBg = isDarkMode ? "#1E293B" : "#FFFFFF";
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        { backgroundColor: isDarkMode ? "#0F172A" : "#F8FAFC" },
+      ]}
+    >
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
       >
-        <Text style={styles.title}>Insights</Text>
+        <Text style={[styles.title, { color: textColor }]}>Insights</Text>
 
-        {/* 🏆 SAVINGS RATE CARD */}
-        <View style={styles.mainCard}>
-          <Text style={styles.mainLabel}>Savings Rate</Text>
-          <Text
-            style={[
-              styles.mainValue,
-              { color: Number(savingsRate) > 20 ? "#10B981" : "#F59E0B" },
-            ]}
-          >
-            {savingsRate}%
-          </Text>
-          <Text style={styles.hintText}>
-            {Number(savingsRate) > 0
-              ? `You've kept ${savingsRate}% of what you earned! `
-              : "Start tracking to see your growth."}
-          </Text>
+        <View
+          style={[
+            styles.smartCard,
+            {
+              backgroundColor: isDarkMode
+                ? "rgba(99, 102, 241, 0.1)"
+                : "#E0E7FF",
+            },
+          ]}
+        >
+          <Ionicons name="trending-down" size={24} color="#6366F1" />
+          <View style={{ marginLeft: 12, flex: 1 }}>
+            <Text style={[styles.smartTitle, { color: textColor }]}>
+              Top Spending
+            </Text>
+            <Text style={{ color: isDarkMode ? "#94A3B8" : "#475569" }}>
+              Biggest expense:{" "}
+              <Text style={{ fontWeight: "bold", color: "#6366F1" }}>
+                {topCategory}
+              </Text>
+            </Text>
+          </View>
         </View>
 
-        {/* 📈 SPENDING TREND (Line Chart) */}
-        <Text style={styles.sectionTitle}>Spending Trend</Text>
-        <View style={styles.chartContainer}>
-          {lineData.length > 1 ? (
-            <LineChart
-              data={lineData}
-              color="#6366F1"
-              thickness={3}
-              dataPointsColor="#6366F1"
-              areaChart
-              startFillColor="rgba(99, 102, 241, 0.3)"
-              endFillColor="rgba(99, 102, 241, 0.01)"
-              initialSpacing={20}
+        <Text style={[styles.sectionTitle, { color: textColor }]}>
+          Category Totals
+        </Text>
+        <View style={[styles.chartContainer, { backgroundColor: cardBg }]}>
+          {barData.length > 0 ? (
+            <BarChart
+              data={barData}
+              barWidth={45}
+              maxValue={chartMaxValue}
               noOfSections={3}
-              yAxisTextStyle={{ color: "#94A3B8" }}
-              xAxisLabelTextStyle={{ color: "#94A3B8" }}
-              hideRules
-              width={width - 80}
+              stepValue={chartMaxValue / 3}
+              barBorderRadius={8}
+              frontColor="#6366F1"
+              yAxisThickness={0}
+              xAxisThickness={0}
+              hideRules={false}
+              rulesColor={
+                isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"
+              }
+              yAxisTextStyle={{ color: "#94A3B8", fontSize: 10 }}
+              formatYLabel={(label) => `₹${Number(label) / 1000}k`}
+              width={width - 110}
             />
           ) : (
-            <Text style={styles.noData}>
-              Add more transactions to see trends.
-            </Text>
+            <Text style={{ color: "#94A3B8" }}>No expenses to analyze.</Text>
           )}
         </View>
 
-        {/* 🥧 EXPENSE BREAKDOWN (Pie Chart) */}
-        <Text style={styles.sectionTitle}>Expense Breakdown</Text>
-        <View style={styles.chartContainer}>
+        <Text style={[styles.sectionTitle, { color: textColor }]}>
+          Breakdown (%)
+        </Text>
+        <View style={[styles.chartContainer, { backgroundColor: cardBg }]}>
           {pieData.length > 0 ? (
             <View style={styles.pieRow}>
               <PieChart
                 data={pieData}
                 donut
-                sectionAutoFocus
-                radius={80}
-                innerRadius={60}
-                innerCircleColor={"#1E293B"}
+                radius={70}
+                innerRadius={55}
+                innerCircleColor={cardBg}
+                centerLabelComponent={() => (
+                  <Text style={{ color: textColor, fontWeight: "bold" }}>
+                    {pieData.length} Cats
+                  </Text>
+                )}
               />
               <View style={styles.legend}>
                 {pieData.map((item, i) => (
@@ -115,13 +150,20 @@ export default function InsightsScreen() {
                     <View
                       style={[styles.dot, { backgroundColor: item.color }]}
                     />
-                    <Text style={styles.legendText}>{item.text}</Text>
+                    <Text
+                      style={[
+                        styles.legendText,
+                        { color: isDarkMode ? "#CBD5F5" : "#475569" },
+                      ]}
+                    >
+                      {item.text}
+                    </Text>
                   </View>
                 ))}
               </View>
             </View>
           ) : (
-            <Text style={styles.noData}>No expenses categorized yet.</Text>
+            <Text style={{ color: "#94A3B8" }}>No data yet.</Text>
           )}
         </View>
       </ScrollView>
@@ -130,53 +172,36 @@ export default function InsightsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0F172A", paddingHorizontal: 20 },
-  title: {
-    color: "white",
-    fontSize: 32,
-    fontWeight: "bold",
-    marginVertical: 20,
-  },
+  container: { flex: 1, paddingHorizontal: 20 },
+  title: { fontSize: 32, fontWeight: "bold", marginVertical: 20 },
   sectionTitle: {
-    color: "white",
     fontSize: 18,
     fontWeight: "bold",
     marginTop: 25,
     marginBottom: 15,
   },
-
-  mainCard: {
-    backgroundColor: "#1E293B",
-    padding: 25,
-    borderRadius: 24,
+  smartCard: {
+    flexDirection: "row",
     alignItems: "center",
-    elevation: 5,
-  },
-  mainLabel: { color: "#94A3B8", fontSize: 16, fontWeight: "600" },
-  mainValue: { fontSize: 48, fontWeight: "bold", marginVertical: 10 },
-  hintText: {
-    color: "#CBD5F5",
-    fontSize: 14,
-    fontStyle: "italic",
-    textAlign: "center",
-  },
-
-  chartContainer: {
-    backgroundColor: "#1E293B",
     padding: 20,
     borderRadius: 20,
-    alignItems: "center",
+    marginBottom: 10,
   },
-  noData: { color: "#475569", marginVertical: 20 },
-
+  smartTitle: { fontSize: 16, fontWeight: "bold" },
+  chartContainer: {
+    padding: 20,
+    borderRadius: 24,
+    alignItems: "center",
+    elevation: 2,
+  },
   pieRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-around",
     width: "100%",
   },
-  legend: { marginLeft: 10 },
-  legendItem: { flexDirection: "row", alignItems: "center", marginBottom: 5 },
-  dot: { width: 10, height: 10, borderRadius: 5, marginRight: 8 },
-  legendText: { color: "#CBD5F5", fontSize: 12 },
+  legend: { marginLeft: 15 },
+  legendItem: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
+  dot: { width: 12, height: 12, borderRadius: 6, marginRight: 10 },
+  legendText: { fontSize: 13, fontWeight: "500" },
 });

@@ -1,20 +1,3 @@
-FlowMoney 
-Its A High-Performance, Professional Finance Companion for React Native.
-FlowMoney is a premium mobile application designed to solve the "friction" of daily expense tracking. By combining Reanimated v2 physics, Contextual State Management, and Data Visualization, it transforms raw numbers into actionable financial insights.
-Project Links
-Video Demo: Watch the DEMO ON MY Phone 
-LINK :  https://drive.google.com/file/d/1MO1gBZDc_1FvPEaRIuyEHIpJuwypH2PB/view?usp=sharing 
-Source Code: https://github.com/DarshanD4/PersonalFinanceTracker.git
-
-Development Roadmap (Evolution of FlowMoney)
-Phase 1: Foundation & Wire-Flow Setup
-Architecture: Established a Clean Architecture using TypeScript and React Navigation.
-Navigation: Designed a "Mobile-First" flow: Home → Add Transaction with minimum friction.
-State: Built the FinanceContext using the Provider Pattern to manage a single source of truth across all screens.
-# FlowMoney
-
-### A High-Performance, Professional Finance Companion for React Native
-
 FlowMoney is a premium mobile application designed to eliminate the friction of daily expense tracking.
 It combines smooth UI physics, structured state management, and meaningful data visualization to transform raw financial data into actionable insights.
 

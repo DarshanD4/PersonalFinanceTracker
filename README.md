@@ -1,93 +1,66 @@
-Flow is a mobile-first personal finance companion app designed to help users track their spending, understand financial habits, and improve money management through a clean and intuitive interface.
+FlowMoney 
+Its A High-Performance, Professional Finance Companion for React Native.
+FlowMoney is a premium mobile application designed to solve the "friction" of daily expense tracking. By combining Reanimated v2 physics, Contextual State Management, and Data Visualization, it transforms raw numbers into actionable financial insights.
+Project Links
+Video Demo: Watch the DEMO ON MY Phone 
+LINK ---  https://drive.google.com/file/d/1MO1gBZDc_1FvPEaRIuyEHIpJuwypH2PB/view?usp=sharing 
+Source Code: 
 
-This project focuses on product thinking, UI/UX clarity, and structured mobile development, rather than just feature implementation.
-Features Implemented
-Home Dashboard
-Personalized greeting
-Horizontal infinite carousel showing:
-Total Balance
-Income
-Expenses
-Smooth snap-based scrolling with looped experience
-Recent Transactions Preview
-Displays top 5 latest transactions
-Compact, clean UI
-Clickable card → navigates to full transaction screen
-Floating Action Button (FAB) for quick transaction entry
-Add Transaction Screen
-Large, focused amount input with ₹ symbol
-Transaction type toggle
-Income / Expense (button-based, no manual input errors)
-Category input field
-Input validation (prevents empty submissions)
-Custom styled buttons (Save / Cancel)
-Clean, modern UI consistent with dashboard Navigation Architecture
-Stack + Tab Navigation (Industry Standard)
-Tabs:
-Home
-Insights
-Stack Screens:
-Add Transaction
-Transactions
+Development Roadmap (Evolution of FlowMoney)
+Phase 1: Foundation & Wire-Flow Setup
+Architecture: Established a Clean Architecture using TypeScript and React Navigation.
+Navigation: Designed a "Mobile-First" flow: Home → Add Transaction with minimum friction.
+State: Built the FinanceContext using the Provider Pattern to manage a single source of truth across all screens.
 
-Ensures smooth flow:
+Phase 2: Navigation Deep-Dive & Drawer Integration
+Drawer Navigator: Implemented a custom side-drawer for deep-level settings and high-level goal tracking.
+Persistence: Integrated AsyncStorage with a hydration hook to ensure user data, theme preferences, and goals survive app restarts.
+Onboarding: Developed the "Gatekeeper" logic to prevent the "Cold Start" problem, forcing a setup for new users (Name, Salary, Savings Goal).
 
-Home → Add Transaction → Back → Home
-Home → Transactions → Back → Home
- Key Engineering Concepts Used
-Custom infinite carousel (circular buffer technique)
-Snap physics using snapToInterval
-React Hooks (useState, useEffect, useRef)
-Clean component structure and separation
-Touchable interactions for better UX
-Form handling and validation
-Navigation flow design (Stack + Tabs)
-Product Thinking Highlights
-Dashboard-first approach for quick insights
-Reduced navigation friction (transactions preview inside home)
-Error-proof input design (toggle instead of text input)
-Focus on clarity over complexity
-Designed for everyday usability Tech Stack
-React Native (Expo)
-TypeScript
-React Navigation (Stack + Bottom Tabs)
-React Native Paper (UI components)
-AsyncStorage (planned for persistence)
-Upcoming Features
-Persistent data using AsyncStorage
-Full Transactions Screen with complete history
-Insights Screen (charts and spending analytics)
-Filtering transactions by category
-Spend limit + smart alerts
-User onboarding (salary, savings goals)
+Phase 3: Insights & Gesture Engineering (Final Polish)
+Data Visualization: Built a custom grouping engine for Bar Charts and Donut Charts. Solved the Y-Axis decimal scaling issue using a dynamic normalization algorithm.
+Gesture Physics: Replaced standard lists with Reanimated v2 Swipeable rows. Implemented a useRef<Map> strategy for 60fps performance on Edit/Delete actions.
+Calendar Sync: Integrated a dark-mode optimized activity calendar to track daily engagement.
+
+App Workflow (User Journey)
+To ensure a seamless experience, the app follows a strictly logical flow:
+Onboarding (First Launch): User enters their name, monthly salary (initial income), and savings goal.
+Dashboard (The Hub): View real-time balance, scroll through the "Income/Expense/Balance" carousel, and see recent activity.
+Add/Edit (Quick Action): A polymorphic form allows for instant entry or modification of expenses.
+Insights (Analytics): Grouped bar charts show "Total Spending per Category" while the Donut chart shows percentage breakdown.
+Drawer (Management): Adjust the monthly savings goal on the fly and track consistency via the Activity Calendar.
+
+Engineering "Show-Off" Features
+
+1. The "60fps" Gesture Engine
+Implemented Bi-Directional Swipes in the transaction history:
+Swipe Right (Indigo): Instant Edit workflow.
+Swipe Left (Red): Destructive Delete.
+Tech: Offloaded all animation logic to the Native UI Thread using Reanimated, ensuring zero lag during list scrolling.
+
+2. Dynamic Axis Normalization
+To avoid irregular decimals in financial charts (e.g., ₹3.75k), I built an algorithm that:
+Finds the maximum grouped value.
+Rounds the Y-Axis ceiling to the nearest 5,000 unit.
+Formats labels into clean "k" units (₹5k, ₹10k, ₹15k).
+
+File Structure
+Plaintext
+├── src
+│   ├── context      # State Management (FinanceContext.tsx)
+│   ├── components   # CustomDrawer.tsx, CustomButtons
+│   ├── screens
+│   │   ├── OnboardingScreen.tsx # User initialization
+│   │   ├── InsightsScreen.tsx   # Grouped Data Charts
+│   │   ├── TransactionsScreen.tsx # Performance List (Swipeable)
+│   │   └── AddTransactionScreen.tsx # Polymorphic CRUD Form
+│   └── types        # Navigation & Data Type Safety
+
 Installation & Setup
-# Install dependencies
-npm install
 
-# Start the app
-npx expo start
+Clone the repo: git clone <>
+Install dependencies: npm install
+Run: npx expo start
 
-Run on:
-
-Android Emulator / Device
-iOS Simulator (if available)
-📌 Project Status
-
-🚧 In Active Development
-
-Core UI and navigation are complete.
-Next phase focuses on data handling and real-time updates.
-
-👨‍💻 Developer Notes
-
-This project emphasizes:
-
-Clean UI/UX design
-Scalable architecture
-Real-world mobile development practices
-
-The goal is to build a practical, user-friendly finance companion, not just a feature-heavy application.
-
-📄 License
-
-This project is for evaluation and learning purposes.
+👨‍💻 Final Developer Notes
+This project is more than a tracker—it's a study in Product Thinking. Every choice, from the "Income" auto-injection during onboarding to the "Bi-directional swipes," was made to reduce user cognitive load and maximize app retentio
